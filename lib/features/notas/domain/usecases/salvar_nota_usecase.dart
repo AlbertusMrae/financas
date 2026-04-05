@@ -1,1 +1,12 @@
-// Caso de uso para persistir (criar ou atualizar) uma nota.
+import '../entities/nota.dart';
+import '../repositories/notas_repository.dart';
+
+class SalvarNotaUseCase {
+  final NotasRepository repository;
+
+  SalvarNotaUseCase({required this.repository});
+
+  Future<void> call({required Nota nota}) {
+    return repository.salvarNota(nota: nota);
+  }
+}
