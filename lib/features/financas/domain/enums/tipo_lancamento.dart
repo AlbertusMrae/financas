@@ -1,1 +1,1 @@
-// Enumeração de tipos de lançamento (ex.: entrada, saída) no domínio.
+enum TipoLancamento { entrada, saida }

@@ -1,1 +1,9 @@
-// Entidade de domínio que representa um item de distribuição entre carteiras ou categorias.
+class DistribuicaoItem {
+  final String conjugeId;
+  final double valor;
+
+  const DistribuicaoItem({
+    required this.conjugeId,
+    required this.valor,
+  });
+}
