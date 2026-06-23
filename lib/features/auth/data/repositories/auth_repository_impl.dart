@@ -51,4 +51,22 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Casal> buscarCasal() {
     return dataSource.buscarCasal();
   }
+
+  @override
+  Future<String> gerarCodigoConvite({required String casalId}) {
+    return dataSource.gerarCodigoConvite(casalId: casalId);
+  }
+
+  @override
+  Future<Conjuge> entrarNoCasalPorCodigo({
+    required String codigo,
+    required String nome,
+    required PapelNoCasal papel,
+  }) {
+    return dataSource.entrarNoCasalPorCodigo(
+      codigo: codigo,
+      nome: nome,
+      papel: papel,
+    );
+  }
 }

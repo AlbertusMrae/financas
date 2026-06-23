@@ -24,7 +24,7 @@ Estudamos na ordem — não avançamos para Clean Architecture sem POO sólido.
 | 1.7 | Herança (`extends`) | `ConMelancia` / `ConUva` como `Conjuge` | ✅ estudado |
 | 1.8 | `super` no construtor | construtores com herança | ✅ estudado |
 | 1.9 | `@override` e `super.metodo()` | sobrescrita de métodos | ✅ estudado |
-| 1.10 | Classes abstratas | conceito estudado; sem uso direto no MVP (over engineering) | ✅ estudado |
+| 1.10 | Classes abstratas | conceito estudado; sem uso direto no MVP | ✅ estudado |
 | 1.11 | Interfaces (`interface class`) | `AuthRepository`, `FinancasRepository`, etc. | ✅ estudado |
 | 1.12 | Polimorfismo | `RepositoryImpl` tratado como `Repository` nos UseCases | ✅ estudado |
 | 1.13 | `implements` vs `extends` | `RepositoryImpl implements Repository` | ✅ estudado |
@@ -37,12 +37,12 @@ Estudamos na ordem — não avançamos para Clean Architecture sem POO sólido.
 | # | Conceito | Onde aparece no NósApp | Status |
 |---|---|---|---|
 | 2.1 | `final` vs `const` vs `var` | em todas as entidades | ✅ estudado |
-| 2.2 | Null safety (`?`, `!`, `??`) | `parteConMelancia?`, `parteConUva?`, `fotoUrl?` | ✅ estudado |
+| 2.2 | Null safety (`?`, `!`, `??`) | `conMelancia?`, `conUva?`, `fotoUrl?`, `codigoConvite?` | ✅ estudado |
 | 2.3 | `List`, `Map`, `Set` | listas de lançamentos, carteiras | ✅ estudado |
-| 2.4 | `async`/`await`/`Future` | chamadas ao Supabase | ⬜ pendente |
+| 2.4 | `async`/`await`/`Future` | chamadas ao Supabase em todos os datasources | ✅ estudado |
 | 2.5 | Arrow functions (`=>`) | getters curtos nas entidades | ✅ estudado |
-| 2.6 | `factory` constructor | `ConjugeModel.fromJson()` | ⬜ pendente |
-| 2.7 | Enums | `TipoCarteira`, `TipoLancamento` | ⬜ pendente |
+| 2.6 | `factory` constructor | `ConjugeModel.fromJson()`, `CasalModel.fromJson()` | ✅ estudado |
+| 2.7 | Enums | `PapelNoCasal`, `TipoCarteira`, `TipoLancamento` | ✅ estudado |
 | 2.8 | Mixins | (quando surgir necessidade) | ⬜ pendente |
 
 ---
@@ -53,14 +53,14 @@ Estudamos na ordem — não avançamos para Clean Architecture sem POO sólido.
 | # | Conceito | Onde aparece no NósApp | Status |
 |---|---|---|---|
 | 3.1 | Visão geral das camadas | estrutura de pastas definida e criada | ✅ concluído |
-| 3.2 | Entidades (Domain) | `Conjuge`, `Casal`, `Carteira`, `Lancamento`, `Nota`, `ItemCompra` | ⬜ implementar |
-| 3.3 | Repository interface (Domain) | `AuthRepository`, `FinancasRepository`, etc. | ⬜ implementar |
-| 3.4 | Use Cases (Domain) | `RegistrarLancamentoUseCase`, etc. | ⬜ implementar |
-| 3.5 | Models / DTOs (Data) | `ConjugeModel.fromJson()` | ⬜ implementar |
-| 3.6 | Repository Impl (Data) | `FinancasRepositoryImpl` | ⬜ implementar |
-| 3.7 | DataSource (Data) | `FinancasRemoteDataSource` | ⬜ implementar |
-| 3.8 | Provider (Presentation) | `FinancasProvider` | ⬜ implementar |
-| 3.9 | Injeção de dependência manual | `injection_container.dart` | ⬜ implementar |
+| 3.2 | Entidades (Domain) | `Conjuge`, `Casal`, `Carteira`, `Lancamento`, `Nota`, `ItemCompra` | ✅ concluído |
+| 3.3 | Repository interface (Domain) | `AuthRepository`, `FinancasRepository`, etc. | ✅ concluído |
+| 3.4 | Use Cases (Domain) | `SignInUseCase`, `GerarCodigoConviteUseCase`, etc. | ✅ concluído |
+| 3.5 | Models / DTOs (Data) | `ConjugeModel`, `CasalModel`, `LancamentoModel`, etc. | ✅ concluído |
+| 3.6 | Repository Impl (Data) | `AuthRepositoryImpl`, `FinancasRepositoryImpl`, etc. | ✅ concluído |
+| 3.7 | DataSource (Data) | `AuthRemoteDataSource`, `FinancasRemoteDataSource`, etc. | ✅ concluído |
+| 3.8 | Provider (Presentation) | `AuthProvider`, `FinancasProvider`, etc. | ✅ concluído |
+| 3.9 | Injeção de dependência manual | `injection_container.dart` wiring completo | ✅ concluído |
 
 ---
 
@@ -70,11 +70,13 @@ Estudamos na ordem — não avançamos para Clean Architecture sem POO sólido.
 | # | Conceito | Onde aparece no NósApp | Status |
 |---|---|---|---|
 | 4.1 | StatelessWidget e StatefulWidget | widgets do app | ✅ estudado |
-| 4.2 | Provider com ChangeNotifier | `FinancasProvider`, `NotasProvider`, etc. | ⬜ pendente |
-| 4.3 | Consumer e context.watch | telas que ouvem os providers | ⬜ pendente |
-| 4.4 | Supabase Auth | tela de login | ⬜ pendente |
-| 4.5 | Supabase CRUD | datasources | ⬜ pendente |
-| 4.6 | Supabase Realtime | sync entre ConMelancia e ConUva | ⬜ pendente |
+| 4.2 | Provider com ChangeNotifier | `AuthProvider`, `FinancasProvider`, etc. | ✅ concluído |
+| 4.3 | Consumer e context.watch | telas de auth e onboarding | ✅ concluído |
+| 4.4 | Supabase Auth | sign in, sign up, logout, onboarding | ✅ concluído |
+| 4.5 | Supabase CRUD | datasources com select/insert/update | ✅ concluído |
+| 4.6 | Supabase Realtime | sync em tempo real entre ConMelancia e ConUva | ⬜ pendente |
+| 4.7 | Timer e Clipboard | código de convite com countdown e cópia | ✅ concluído |
+| 4.8 | RLS (Row Level Security) | políticas de acesso por usuário no Supabase | ✅ concluído (MVP) |
 
 ---
 
@@ -83,13 +85,15 @@ Estudamos na ordem — não avançamos para Clean Architecture sem POO sólido.
 ```
 ✅ 1.1–1.13   (POO completo)
        ↓
-2.7 → 2.4 → 2.6        (Dart necessário para implementar)
+✅ 2.7 → 2.4 → 2.6        (Dart necessário para implementar)
        ↓
-3.2 → 3.3 → 3.4        (implementar Domain)
+✅ 3.2 → 3.3 → 3.4        (Domain implementado)
        ↓
-3.5 → 3.6 → 3.7        (implementar Data)
+✅ 3.5 → 3.6 → 3.7        (Data implementado)
        ↓
-3.8 → 3.9              (implementar Presentation)
+✅ 3.8 → 3.9              (Presentation implementado)
        ↓
-4.2 → 4.3 → 4.4 → 4.5 → 4.6  (Flutter + Supabase)
+✅ 4.2 → 4.3 → 4.4 → 4.5  (Flutter + Supabase funcionando)
+       ↓
+⬜ 4.6                     (Realtime — próximo passo)
 ```

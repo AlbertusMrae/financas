@@ -7,6 +7,8 @@ import '../../domain/usecases/buscar_casal_opcional_usecase.dart';
 import '../../domain/usecases/buscar_casal_usecase.dart';
 import '../../domain/usecases/buscar_conjuge_opcional_usecase.dart';
 import '../../domain/usecases/completar_perfil_conjuge_usecase.dart';
+import '../../domain/usecases/entrar_no_casal_por_codigo_usecase.dart';
+import '../../domain/usecases/gerar_codigo_convite_usecase.dart';
 import '../../domain/usecases/registrar_conta_usecase.dart';
 import '../../domain/usecases/sign_in_usecase.dart';
 import '../../domain/usecases/logout_usecase.dart';
@@ -20,6 +22,8 @@ class AuthProvider extends ChangeNotifier {
     required this.registrarContaUseCase,
     required this.completarPerfilConjugeUseCase,
     required this.logoutUseCase,
+    required this.gerarCodigoConviteUseCase,
+    required this.entrarNoCasalPorCodigoUseCase,
   });
 
   final SignInUseCase signInUseCase;
@@ -29,11 +33,14 @@ class AuthProvider extends ChangeNotifier {
   final RegistrarContaUseCase registrarContaUseCase;
   final CompletarPerfilConjugeUseCase completarPerfilConjugeUseCase;
   final LogoutUseCase logoutUseCase;
+  final GerarCodigoConviteUseCase gerarCodigoConviteUseCase;
+  final EntrarNoCasalPorCodigoUseCase entrarNoCasalPorCodigoUseCase;
 
   Conjuge? conjuge;
   Casal? casal;
   bool carregando = false;
   String? erro;
+  String? codigoConvite;
 
   /// Sessão Auth ok, mas falta `conjuges`/`casais` no banco.
   bool precisaCompletarPerfil = false;
@@ -110,6 +117,48 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> gerarCodigo() async {
+    if (casal == null) return;
+    carregando = true;
+    erro = null;
+    notifyListeners();
+
+    try {
+      codigoConvite = await gerarCodigoConviteUseCase(casalId: casal!.id);
+      casal = await buscarCasalUseCase();
+    } catch (e) {
+      erro = _mensagemErroGenerico(e);
+    }
+
+    carregando = false;
+    notifyListeners();
+  }
+
+  Future<void> entrarComCodigo({
+    required String codigo,
+    required String nome,
+    required PapelNoCasal papel,
+  }) async {
+    carregando = true;
+    erro = null;
+    notifyListeners();
+
+    try {
+      conjuge = await entrarNoCasalPorCodigoUseCase(
+        codigo: codigo.trim().toUpperCase(),
+        nome: nome,
+        papel: papel,
+      );
+      casal = await buscarCasalUseCase();
+      precisaCompletarPerfil = false;
+    } catch (e) {
+      erro = _mensagemErroConvite(e);
+    }
+
+    carregando = false;
+    notifyListeners();
+  }
+
   /// Carrega `conjuge` e `casal` após sign-in ou sign-up com sessão.
   Future<void> _resolverPerfilAposSessao() async {
     conjuge = await buscarConjugeOpcionalUseCase();
@@ -170,6 +219,20 @@ class AuthProvider extends ChangeNotifier {
     return 'Não foi possível concluir. Tente novamente.';
   }
 
+  String _mensagemErroConvite(Object e) {
+    final texto = e.toString().toLowerCase();
+    if (texto.contains('expirado')) {
+      return 'Código expirado. Peça um novo ao seu parceiro.';
+    }
+    if (texto.contains('inválido') || texto.contains('invalido')) {
+      return 'Código inválido. Verifique e tente novamente.';
+    }
+    if (texto.contains('ocupado')) {
+      return 'Este papel já está ocupado no casal.';
+    }
+    return 'Não foi possível entrar no casal. Tente novamente.';
+  }
+
   Future<void> logout() async {
     carregando = true;
     notifyListeners();
@@ -178,6 +241,7 @@ class AuthProvider extends ChangeNotifier {
       await logoutUseCase();
       conjuge = null;
       casal = null;
+      codigoConvite = null;
       precisaCompletarPerfil = false;
     } catch (e) {
       erro = e.toString();

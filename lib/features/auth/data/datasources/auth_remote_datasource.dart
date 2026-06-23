@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
 
@@ -143,6 +145,82 @@ class AuthRemoteDataSource {
     final recarregar = await buscarConjugeDoUsuarioAtualSeExistir();
     if (recarregar == null) {
       throw StateError('Falha ao recarregar cônjuge após criar perfil.');
+    }
+    return recarregar;
+  }
+
+  static const _chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  String _gerarCodigo6() {
+    final rng = Random.secure();
+    return List.generate(6, (_) => _chars[rng.nextInt(_chars.length)]).join();
+  }
+
+  Future<String> gerarCodigoConvite({required String casalId}) async {
+    final codigo = _gerarCodigo6();
+    final expiraEm = DateTime.now().add(const Duration(minutes: 15));
+
+    await client.from('casais').update({
+      'codigo_convite': codigo,
+      'codigo_expira_em': expiraEm.toIso8601String(),
+    }).eq('id', casalId);
+
+    return codigo;
+  }
+
+  Future<ConjugeModel> entrarNoCasalPorCodigo({
+    required String codigo,
+    required String nome,
+    required PapelNoCasal papel,
+  }) async {
+    final user = client.auth.currentUser;
+    if (user == null) throw StateError('Usuário não autenticado.');
+
+    final uid = user.id;
+    final email = user.email ?? '';
+
+    final json = await client
+        .from('casais')
+        .select(_selectCasalComConjuges)
+        .eq('codigo_convite', codigo)
+        .maybeSingle();
+
+    if (json == null) throw ArgumentError('Código inválido.');
+
+    final expiraEmStr = json['codigo_expira_em'] as String?;
+    if (expiraEmStr == null ||
+        DateTime.parse(expiraEmStr).isBefore(DateTime.now())) {
+      throw ArgumentError('Código expirado. Peça um novo ao seu parceiro.');
+    }
+
+    final casalId = json['id'] as String;
+    final campoOcupado = papel == PapelNoCasal.conMelancia
+        ? json['con_melancia_id'] as String?
+        : json['con_uva_id'] as String?;
+
+    if (campoOcupado != null) {
+      throw ArgumentError('Este papel já está ocupado no casal.');
+    }
+
+    await client.from('conjuges').insert({
+      'id': uid,
+      'nome': nome,
+      'email': email,
+      'casal_id': casalId,
+    });
+
+    final campoUpdate = papel == PapelNoCasal.conMelancia
+        ? {'con_melancia_id': uid}
+        : {'con_uva_id': uid};
+    await client.from('casais').update({
+      ...campoUpdate,
+      'codigo_convite': null,
+      'codigo_expira_em': null,
+    }).eq('id', casalId);
+
+    final recarregar = await buscarConjugeDoUsuarioAtualSeExistir();
+    if (recarregar == null) {
+      throw StateError('Falha ao recarregar cônjuge após entrar no casal.');
     }
     return recarregar;
   }

@@ -6,6 +6,8 @@ import '../providers/auth_provider.dart';
 import 'home_screen.dart';
 
 /// Primeiro acesso: cria linhas em `casais` e `conjuges` conforme o schema do Supabase.
+/// Se o usuário informar um código de convite válido, entra no casal existente
+/// em vez de criar um novo.
 class CriarConjugeScreen extends StatefulWidget {
   const CriarConjugeScreen({super.key});
 
@@ -16,11 +18,14 @@ class CriarConjugeScreen extends StatefulWidget {
 class _CriarConjugeScreenState extends State<CriarConjugeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nomeController = TextEditingController();
+  final _codigoController = TextEditingController();
   PapelNoCasal _papel = PapelNoCasal.conMelancia;
+  bool _temCodigo = false;
 
   @override
   void dispose() {
     _nomeController.dispose();
+    _codigoController.dispose();
     super.dispose();
   }
 
@@ -29,13 +34,22 @@ class _CriarConjugeScreenState extends State<CriarConjugeScreen> {
       return;
     }
     final auth = context.read<AuthProvider>();
-    await auth.completarPerfil(
-      nome: _nomeController.text.trim(),
-      papel: _papel,
-    );
-    if (!mounted) {
-      return;
+    final codigo = _codigoController.text.trim();
+
+    if (_temCodigo && codigo.isNotEmpty) {
+      await auth.entrarComCodigo(
+        codigo: codigo,
+        nome: _nomeController.text.trim(),
+        papel: _papel,
+      );
+    } else {
+      await auth.completarPerfil(
+        nome: _nomeController.text.trim(),
+        papel: _papel,
+      );
     }
+
+    if (!mounted) return;
     if (auth.erro == null) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
@@ -75,9 +89,7 @@ class _CriarConjugeScreenState extends State<CriarConjugeScreen> {
                         ),
                         validator: (value) {
                           final v = value?.trim() ?? '';
-                          if (v.isEmpty) {
-                            return 'Informe seu nome.';
-                          }
+                          if (v.isEmpty) return 'Informe seu nome.';
                           return null;
                         },
                       ),
@@ -103,6 +115,37 @@ class _CriarConjugeScreenState extends State<CriarConjugeScreen> {
                           setState(() => _papel = set.first);
                         },
                       ),
+                      const SizedBox(height: 24),
+                      CheckboxListTile(
+                        value: _temCodigo,
+                        onChanged: (v) =>
+                            setState(() => _temCodigo = v ?? false),
+                        title: const Text('Tenho um código de convite'),
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                      ),
+                      if (_temCodigo) ...[
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _codigoController,
+                          textCapitalization: TextCapitalization.characters,
+                          textInputAction: TextInputAction.done,
+                          decoration: const InputDecoration(
+                            labelText: 'Código de convite',
+                            hintText: 'Ex: A3KX9B',
+                            border: OutlineInputBorder(),
+                          ),
+                          validator: (value) {
+                            if (!_temCodigo) return null;
+                            final v = value?.trim() ?? '';
+                            if (v.isEmpty) return 'Informe o código.';
+                            if (v.length != 6) {
+                              return 'O código deve ter 6 caracteres.';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
                       if (auth.erro != null) ...[
                         const SizedBox(height: 16),
                         Text(

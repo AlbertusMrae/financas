@@ -7,6 +7,8 @@ import 'features/auth/domain/usecases/buscar_casal_opcional_usecase.dart';
 import 'features/auth/domain/usecases/buscar_casal_usecase.dart';
 import 'features/auth/domain/usecases/buscar_conjuge_opcional_usecase.dart';
 import 'features/auth/domain/usecases/completar_perfil_conjuge_usecase.dart';
+import 'features/auth/domain/usecases/entrar_no_casal_por_codigo_usecase.dart';
+import 'features/auth/domain/usecases/gerar_codigo_convite_usecase.dart';
 import 'features/auth/domain/usecases/registrar_conta_usecase.dart';
 import 'features/auth/domain/usecases/sign_in_usecase.dart';
 import 'features/auth/domain/usecases/logout_usecase.dart';
@@ -60,6 +62,12 @@ void setupDependencies() {
       repository: authRepository,
     ),
     logoutUseCase: LogoutUseCase(repository: authRepository),
+    gerarCodigoConviteUseCase: GerarCodigoConviteUseCase(
+      repository: authRepository,
+    ),
+    entrarNoCasalPorCodigoUseCase: EntrarNoCasalPorCodigoUseCase(
+      repository: authRepository,
+    ),
   );
 
   // Financas

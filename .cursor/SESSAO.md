@@ -36,58 +36,75 @@ Você é o professor e parceiro de desenvolvimento de Alberto (Albertinho / ConM
 ## Sessão atual
 
 **Data:** 2026-06-22
-**Módulo em andamento:** Módulo 4 — Flutter + Supabase (em integração final)
+**Módulo em andamento:** Módulo 4 — Flutter + Supabase (integração e debug)
 
-### O que foi feito (estado real do código)
+### O que foi feito nessa sessão
 
-O projeto avançou significativamente desde a última sessão registrada. O estado atual é:
+#### Feature: código de convite com expiração de 15 min
+- Planejamento completo da feature (schema, domínio, datasource, provider, telas)
+- **Supabase migration:** colunas `codigo_convite TEXT` e `codigo_expira_em TIMESTAMPTZ` adicionadas em `casais`
+- **`Casal` entity:** `conMelancia` e `conUva` tornados nullable; adicionados `codigoConvite`, `codigoExpiraEm`, getters `codigoAtivo` e `precisaDeParceiro`
+- **`CasalModel`:** `fromJson` atualizado para campos nullable e novos campos
+- **`AuthRepository`:** métodos `gerarCodigoConvite` e `entrarNoCasalPorCodigo` adicionados
+- **`AuthRemoteDataSource`:** implementação dos dois métodos (geração com `Random.secure`, validação de expiração, limpeza do código após uso)
+- **`AuthRepositoryImpl`:** delegação dos dois novos métodos
+- **Use cases:** `GerarCodigoConviteUseCase` e `EntrarNoCasalPorCodigoUseCase` criados
+- **`AuthProvider`:** estado `codigoConvite`, métodos `gerarCodigo()` e `entrarComCodigo()`, `_mensagemErroConvite()`
+- **`injection_container.dart`:** novos use cases registrados
+- **`CriarConjugeScreen`:** checkbox "Tenho um código de convite" com fork — se marcado entra no casal existente; se não, cria casal novo
+- **`HomeScreen`:** ícone `group_add` visível só enquanto falta parceiro; dialog com código em destaque, botão copiar e contador regressivo de 15 min que fecha ao expirar
 
-**Módulo 1 (POO)** — 100% concluído ✅
+#### Debug e correções de RLS no Supabase
+Foram encontrados e corrigidos 6 problemas encadeados via análise de logs:
 
-**Módulo 2 (Dart intermediário)**
-- 2.4 `async/await/Future` ✅ — usado em todos os datasources e usecases
-- 2.5 Arrow functions ✅
-- 2.6 `factory` constructor ✅ — `ConjugeModel.fromJson()`, `CasalModel.fromJson()`, etc.
-- 2.7 Enums ✅ — `PapelNoCasal`, `TipoCarteira`, `TipoLancamento` implementados
+1. **`conjuges_select` com recursão infinita (1ª ocorrência)** — policy consultava a própria tabela `conjuges` em subconsulta; corrigida para consultar `casais`
+2. **Policy `conjuges_insert` ausente** — usuário não conseguia criar seu próprio registro
+3. **Policy `casais_insert` ausente** — usuário não conseguia criar um casal
+4. **`con_melancia_id` / `con_uva_id` NOT NULL** — schema não permitia inserir casal com FKs nulas; colunas tornadas nullable
+5. **`casais_update` com dependência circular** — PATCH retornava 204 mas sem atualizar; policy simplificada para `auth.uid() IS NOT NULL`
+6. **Recursão circular entre `conjuges_select` ↔ `casais_select` (2ª ocorrência)** — as duas policies se referenciavam mutuamente causando loop infinito; solução: função `SECURITY DEFINER` `public.meu_casal_id()` que lê `casal_id` do usuário sem acionar RLS, quebrando o ciclo completamente ✅
 
-**Módulo 3 (Clean Architecture)** — todas as 4 features implementadas ✅
-- Entidades: `Conjuge`, `Casal`, `PapelNoCasal`, `Carteira`, `Lancamento`, `DistribuicaoItem`, `Nota`, `ItemCompra`
-- Repository interfaces: `AuthRepository`, `FinancasRepository`, `ListaComprasRepository`, `NotasRepository`
-- Use Cases auth: `SignInUseCase`, `RegistrarContaUseCase`, `LogoutUseCase`, `BuscarConjugeOpcionalUseCase`, `BuscarCasalOpcionalUseCase`, `BuscarCasalUseCase`, `CompletarPerfilConjugeUseCase`
-- Use Cases financas: `BuscarCarteirasUseCase`, `BuscarLancamentosUseCase`, `RegistrarLancamentoUseCase`
-- Use Cases lista_compras: `BuscarItensUseCase`, `AdicionarItemUseCase`, `MarcarItemUseCase`
-- Use Cases notas: `BuscarNotasUseCase`, `SalvarNotaUseCase`
-- Models: `ConjugeModel`, `CasalModel`, `LancamentoModel`, `CarteiraModel`, `NotaModel`, `ItemCompraModel`
-- Repository Impl: todas as 4 features
-- DataSources: `AuthRemoteDataSource`, `FinancasRemoteDataSource`, `ListaComprasRemoteDataSource`, `NotasRemoteDataSource`
-- Providers: `AuthProvider`, `FinancasProvider`, `ListaComprasProvider`, `NotasProvider`
-- Injeção de dependência: `injection_container.dart` com wiring manual completo
+#### Função criada no Supabase
+```sql
+CREATE OR REPLACE FUNCTION public.meu_casal_id()
+RETURNS uuid LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public AS $$
+  SELECT casal_id FROM public.conjuges WHERE id = auth.uid() LIMIT 1
+$$;
+```
 
-**Módulo 4 (Flutter + Supabase)**
-- 4.2 Provider + ChangeNotifier ✅ — todos os providers com `notifyListeners`
-- 4.3 Consumer / context.watch ✅ — usado nas telas de auth
-- 4.4 Supabase Auth ✅ — sign in, sign up, logout integrados
-- 4.5 Supabase CRUD ✅ — datasources fazem select/insert/update no Supabase
-- Telas existentes: `LoginScreen`, `CadastroScreen`, `CriarConjugeScreen`, `HomeScreen` (placeholder), `CarteirasScreen`, `LancamentosScreen`, `ListaComprasScreen`, `NotasScreen`
-- `main.dart` completo: inicializa Supabase via `.env`, registra todos os providers no `MultiProvider`
+#### Estado atual do RLS (políticas ativas — ✅ testado e funcionando)
+| Tabela | Operação | Condição |
+|---|---|---|
+| `conjuges` | SELECT | `auth.uid() = id` OU `casal_id = meu_casal_id()` |
+| `conjuges` | INSERT | `auth.uid() = id` |
+| `conjuges` | UPDATE | `auth.uid() = id` |
+| `casais` | SELECT | FK direta OU `id = meu_casal_id()` |
+| `casais` | INSERT | `auth.uid() IS NOT NULL` |
+| `casais` | UPDATE | `auth.uid() IS NOT NULL` (MVP — restringir depois) |
 
 ### Onde paramos
 
-- Feature de **Auth está completa** (login, cadastro, onboarding de cônjuge/casal, logout)
-- As demais features (financas, lista_compras, notas) têm toda a camada de dados e domínio implementada, e telas criadas
-- A `HomeScreen` é um placeholder (`'Em breve'`) — a navegação principal por abas ainda não foi construída
-- O fluxo de navegação pós-login (`auth_navigation.dart`) existe mas pode precisar de revisão
+- **Criação de conta + completar perfil funcionando** ✅
+- **Fluxo completo de autenticação validado** em dispositivo
+- `HomeScreen` ainda é placeholder ("Em breve") — navegação por abas não construída
 
 ### Pendências
-- [ ] Construir `HomeScreen` com navegação por abas (BottomNavigationBar ou NavigationBar) integrando as 4 features
-- [ ] Revisar e integrar as telas de financas, lista_compras e notas com seus providers (context.watch / Consumer)
+- [ ] Testar fluxo completo de código de convite (ConMelancia gera → ConUva entra com código)
+- [ ] Construir `HomeScreen` com navegação por abas (`NavigationBar`) integrando as 4 features
+- [ ] Revisar e integrar telas de financas, lista_compras e notas com seus providers
+- [ ] Restringir `casais_update` RLS quando MVP estiver estável (hoje está `auth.uid() IS NOT NULL`)
 - [ ] Supabase Realtime (4.6) — sync em tempo real entre ConMelancia e ConUva
-- [ ] Testes das telas (`cadastro_form_test.dart`, `login_form_test.dart`, `auth_provider_perfil_test.dart` já existem mas podem estar desatualizados)
-- [ ] Atualizar ROADMAP_NOSAPP.md com os itens já concluídos
+- [ ] Atualizar testes (`cadastro_form_test.dart`, `login_form_test.dart`, `auth_provider_perfil_test.dart`)
 
 ---
 
 ## Histórico de sessões anteriores
+
+### Sessão 2026-06-22 (início)
+- Análise do estado real do projeto (muito além do que o SESSAO.md registrava)
+- Identificação de que Módulos 1–4 estavam praticamente implementados no código
+- `flutter pub get` pendente para resolver import de `provider`
 
 ### Sessão 2026-04-05
 - Escopo do MVP definido do zero

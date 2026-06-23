@@ -38,4 +38,18 @@ interface class AuthRepository {
   Future<Casal> buscarCasal() {
     throw UnimplementedError();
   }
+
+  /// Gera um código de 6 caracteres com validade de 15 min e salva em `casais`.
+  Future<String> gerarCodigoConvite({required String casalId}) {
+    throw UnimplementedError();
+  }
+
+  /// Entra no casal identificado pelo [codigo], criando o cônjuge e vinculando o papel.
+  Future<Conjuge> entrarNoCasalPorCodigo({
+    required String codigo,
+    required String nome,
+    required PapelNoCasal papel,
+  }) {
+    throw UnimplementedError();
+  }
 }
