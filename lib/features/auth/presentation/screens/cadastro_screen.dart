@@ -3,39 +3,54 @@ import 'package:provider/provider.dart';
 
 import '../providers/auth_provider.dart';
 import '../utils/auth_navigation.dart';
-import '../widgets/login_form.dart';
-import 'cadastro_screen.dart';
+import '../widgets/cadastro_form.dart';
+import 'login_screen.dart';
 
-/// Autenticação por e-mail e senha.
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+/// Cadastro no Supabase Auth; pode exigir confirmação de e-mail conforme o projeto.
+class CadastroScreen extends StatefulWidget {
+  const CadastroScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<CadastroScreen> createState() => _CadastroScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _CadastroScreenState extends State<CadastroScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _senhaController = TextEditingController();
+  final _confirmarSenhaController = TextEditingController();
 
   @override
   void dispose() {
     _emailController.dispose();
     _senhaController.dispose();
+    _confirmarSenhaController.dispose();
     super.dispose();
   }
 
-  Future<void> _entrar() async {
+  Future<void> _criarConta() async {
     if (!(_formKey.currentState?.validate() ?? false)) {
       return;
     }
     final auth = context.read<AuthProvider>();
-    await auth.login(
+    final abriuSessao = await auth.cadastrar(
       email: _emailController.text.trim(),
       senha: _senhaController.text,
     );
     if (!mounted) {
+      return;
+    }
+    if (!abriuSessao && auth.erro == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Confirme o link enviado ao seu e-mail antes de entrar.',
+          ),
+        ),
+      );
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => const LoginScreen()),
+      );
       return;
     }
     if (auth.erro == null) {
@@ -61,25 +76,26 @@ class _LoginScreenState extends State<LoginScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'NósApp',
+                        'Criar conta',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.headlineMedium,
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Entre com sua conta',
+                        'Preencha os dados abaixo',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 32),
-                      LoginForm(
+                      CadastroForm(
                         formKey: _formKey,
                         emailController: _emailController,
                         senhaController: _senhaController,
+                        confirmarSenhaController: _confirmarSenhaController,
                         carregando: auth.carregando,
-                        onEntrar: _entrar,
+                        onCriarConta: _criarConta,
                       ),
                       if (auth.erro != null) ...[
                         const SizedBox(height: 16),
@@ -95,13 +111,13 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: auth.carregando
                             ? null
                             : () {
-                                Navigator.of(context).push(
+                                Navigator.of(context).pushReplacement(
                                   MaterialPageRoute<void>(
-                                    builder: (_) => const CadastroScreen(),
+                                    builder: (_) => const LoginScreen(),
                                   ),
                                 );
                               },
-                        child: const Text('Criar conta'),
+                        child: const Text('Já tenho conta'),
                       ),
                     ],
                   ),

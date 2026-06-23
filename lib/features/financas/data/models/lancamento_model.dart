@@ -54,10 +54,7 @@ class LancamentoModel extends Lancamento {
             }
           : null,
       'parte_con_uva': parteConUva != null
-          ? {
-              'conjuge_id': parteConUva!.conjugeId,
-              'valor': parteConUva!.valor,
-            }
+          ? {'conjuge_id': parteConUva!.conjugeId, 'valor': parteConUva!.valor}
           : null,
       'criado_em': criadoEm.toIso8601String(),
     };

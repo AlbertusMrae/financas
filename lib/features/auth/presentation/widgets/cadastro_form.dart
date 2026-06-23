@@ -1,28 +1,31 @@
 import 'package:flutter/material.dart';
 
-/// Formulário de e-mail e senha com validação básica e ação Entrar.
-class LoginForm extends StatefulWidget {
-  const LoginForm({
+/// Formulário de cadastro: e-mail, senha e confirmação.
+class CadastroForm extends StatefulWidget {
+  const CadastroForm({
     super.key,
     required this.formKey,
     required this.emailController,
     required this.senhaController,
+    required this.confirmarSenhaController,
     required this.carregando,
-    required this.onEntrar,
+    required this.onCriarConta,
   });
 
   final GlobalKey<FormState> formKey;
   final TextEditingController emailController;
   final TextEditingController senhaController;
+  final TextEditingController confirmarSenhaController;
   final bool carregando;
-  final VoidCallback onEntrar;
+  final VoidCallback onCriarConta;
 
   @override
-  State<LoginForm> createState() => _LoginFormState();
+  State<CadastroForm> createState() => _CadastroFormState();
 }
 
-class _LoginFormState extends State<LoginForm> {
+class _CadastroFormState extends State<CadastroForm> {
   bool _obscureSenha = true;
+  bool _obscureConfirmar = true;
 
   @override
   Widget build(BuildContext context) {
@@ -57,13 +60,8 @@ class _LoginFormState extends State<LoginForm> {
             TextFormField(
               controller: widget.senhaController,
               obscureText: _obscureSenha,
-              autofillHints: const [AutofillHints.password],
-              textInputAction: TextInputAction.done,
-              onFieldSubmitted: (_) {
-                if (!widget.carregando) {
-                  widget.onEntrar();
-                }
-              },
+              autofillHints: const [AutofillHints.newPassword],
+              textInputAction: TextInputAction.next,
               decoration: InputDecoration(
                 labelText: 'Senha',
                 border: const OutlineInputBorder(),
@@ -81,13 +79,49 @@ class _LoginFormState extends State<LoginForm> {
                 if (value == null || value.isEmpty) {
                   return 'Informe a senha.';
                 }
+                if (value.length < 6) {
+                  return 'Use pelo menos 6 caracteres.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: widget.confirmarSenhaController,
+              obscureText: _obscureConfirmar,
+              autofillHints: const [AutofillHints.newPassword],
+              textInputAction: TextInputAction.done,
+              onFieldSubmitted: (_) {
+                if (!widget.carregando) {
+                  widget.onCriarConta();
+                }
+              },
+              decoration: InputDecoration(
+                labelText: 'Confirmar senha',
+                border: const OutlineInputBorder(),
+                suffixIcon: IconButton(
+                  tooltip: _obscureConfirmar
+                      ? 'Mostrar senha'
+                      : 'Ocultar senha',
+                  icon: Icon(
+                    _obscureConfirmar ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() => _obscureConfirmar = !_obscureConfirmar);
+                  },
+                ),
+              ),
+              validator: (value) {
+                if (value != widget.senhaController.text) {
+                  return 'As senhas não coincidem.';
+                }
                 return null;
               },
             ),
             const SizedBox(height: 24),
             FilledButton(
-              onPressed: widget.carregando ? null : widget.onEntrar,
-              child: const Text('Entrar'),
+              onPressed: widget.carregando ? null : widget.onCriarConta,
+              child: const Text('Criar conta'),
             ),
           ],
         ),

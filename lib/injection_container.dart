@@ -3,7 +3,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 // Auth
 import 'features/auth/data/datasources/auth_remote_datasource.dart';
 import 'features/auth/data/repositories/auth_repository_impl.dart';
-import 'features/auth/domain/usecases/login_usecase.dart';
+import 'features/auth/domain/usecases/buscar_casal_opcional_usecase.dart';
+import 'features/auth/domain/usecases/buscar_casal_usecase.dart';
+import 'features/auth/domain/usecases/buscar_conjuge_opcional_usecase.dart';
+import 'features/auth/domain/usecases/completar_perfil_conjuge_usecase.dart';
+import 'features/auth/domain/usecases/registrar_conta_usecase.dart';
+import 'features/auth/domain/usecases/sign_in_usecase.dart';
 import 'features/auth/domain/usecases/logout_usecase.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
 
@@ -42,7 +47,18 @@ void setupDependencies() {
   final authDataSource = AuthRemoteDataSource(client: client);
   final authRepository = AuthRepositoryImpl(dataSource: authDataSource);
   authProvider = AuthProvider(
-    loginUseCase: LoginUseCase(repository: authRepository),
+    signInUseCase: SignInUseCase(repository: authRepository),
+    buscarConjugeOpcionalUseCase: BuscarConjugeOpcionalUseCase(
+      repository: authRepository,
+    ),
+    buscarCasalOpcionalUseCase: BuscarCasalOpcionalUseCase(
+      repository: authRepository,
+    ),
+    buscarCasalUseCase: BuscarCasalUseCase(repository: authRepository),
+    registrarContaUseCase: RegistrarContaUseCase(repository: authRepository),
+    completarPerfilConjugeUseCase: CompletarPerfilConjugeUseCase(
+      repository: authRepository,
+    ),
     logoutUseCase: LogoutUseCase(repository: authRepository),
   );
 
